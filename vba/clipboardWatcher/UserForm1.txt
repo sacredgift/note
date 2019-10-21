@@ -1,0 +1,14 @@
+Private Sub CheckBox1_Change()
+  If CheckBox1.Value = True Then
+    Module1.catchClipboard
+  Else
+    Module1.releaseClipboard
+  End If
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+  If CheckBox1.Value = True Then
+    Module1.releaseClipboard
+    CheckBox1.Value = False
+  End If
+End Sub

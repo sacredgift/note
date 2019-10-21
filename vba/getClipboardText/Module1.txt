@@ -1,0 +1,135 @@
+Const GMEM_ZEROINIT = &H40
+Const GMEM_MOVEABLE = &H2
+Const GHND = (GMEM_MOVEABLE Or GMEM_ZEROINIT)
+ 
+#If Win64 Then
+    'To copy text on the clipboard
+    Private Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (Destination As Any, Source As Any, ByVal Length As LongPtr)
+    Private Declare PtrSafe Function GlobalUnlock Lib "kernel32" (ByVal hMem As LongLong) As Long
+    Private Declare PtrSafe Function GlobalLock Lib "kernel32" (ByVal hMem As LongLong) As LongPtr
+    Private Declare PtrSafe Function GlobalAlloc Lib "kernel32" (ByVal wFlags As Long, ByVal dwBytes As LongLong) As LongPtr
+    Private Declare PtrSafe Function GlobalSize Lib "kernel32" (ByVal hMem As LongPtr) As LongPtr
+    Private Declare PtrSafe Function CloseClipboard Lib "user32" () As Long
+    Private Declare PtrSafe Function OpenClipboard Lib "user32" (ByVal hwnd As LongLong) As Long
+    Private Declare PtrSafe Function EmptyClipboard Lib "user32" () As Long
+    Private Declare PtrSafe Function lstrcpy Lib "kernel32" Alias "lstrcpyA" (ByVal lpString1 As Any, ByVal lpString2 As String) As LongPtr
+    Private Declare PtrSafe Function GetClipboardData Lib "user32" (ByVal wFormat As Long) As LongPtr
+    Private Declare PtrSafe Function SetClipboardData Lib "user32" (ByVal wFormat As Long, ByVal hMem As LongLong) As LongLong
+    Private Declare PtrSafe Function EnumClipboardFormats Lib "user32" (ByVal wFormat As Long) As Long
+    Private Declare PtrSafe Function IsClipboardFormatAvailable Lib "user32" (ByVal wFormat As Long) As Long
+  #Else
+    Private Declare Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" (lpvDest As Any, lpvSource As Any, ByVal cbCopy As Long)
+    Private Declare Function GlobalUnlock Lib "kernel32" (ByVal hMem As Long) As Long
+    Private Declare Function GlobalLock Lib "kernel32" (ByVal hMem As Long) As Long
+    Private Declare Function GlobalAlloc Lib "kernel32" (ByVal wFlags As Long, ByVal dwBytes As Long) As Long
+    Private Declare Function GlobalSize Lib "kernel32" (ByVal hMem As Long) As Long
+    Private Declare Function CloseClipboard Lib "user32" () As Long
+    Private Declare Function OpenClipboard Lib "user32" (ByVal hwnd As Long) As Long
+    Private Declare Function EmptyClipboard Lib "user32" () As Long
+    Private Declare Function lstrcpy Lib "kernel32" (ByVal lpString1 As Any, ByVal lpString2 As Any) As Long
+    Private Declare Function GetClipboardData Lib "user32" (ByVal wFormat As Long) As Long
+    Private Declare Function SetClipboardData Lib "user32" (ByVal wFormat As Long, ByVal hMem As Long) As Long
+    Private Declare Function OpenClipboard Lib "user32" (ByVal hwnd As Long) As Long
+    Private Declare Function EnumClipboardFormats Lib "user32" (ByVal wFormat As Long) As Long
+    Private Declare Function IsClipboardFormatAvailable Lib "user32" (ByVal wFormat As Long) As Long
+#End If
+ 
+  Public Enum eCBFormat
+    CF_TEXT = 1
+    CF_BITMAP = 2
+    CF_METAFILEPICT = 3
+    CF_SYLK = 4
+    CF_DIF = 5
+    CF_TIFF = 6
+    CF_OEMTEXT = 7
+    CF_DIB = 8
+    CF_PALETTE = 9
+    CF_PENDATA = 10
+    CF_RIFF = 11
+    CF_WAVE = 12
+    CF_UNICODETEXT = 13
+    CF_ENHMETAFILE = 14
+    CF_HDROP = 15
+    CF_LOCALE = 16
+    CF_MAX = 17
+    CF_OWNERDISPLAY = &H80
+    CF_DSPTEXT = &H81
+    CF_DSPBITMAP = &H82
+    CF_DSPMETAFILEPICT = &H83
+    CF_DSPENHMETAFILE = &H8E
+    CF_PRIVATEFIRST = &H200
+    CF_PRIVATELAST = &H2FF
+    CF_GDIOBJFIRST = &H300
+    CF_GDIOBJLAST = &H3FF
+  End Enum
+
+
+#If Win64 Then
+Public Function ClipBoard_HasFormat(ByVal phWnd As LongLong, _
+                   ByVal peCBFormat As eCBFormat) As Boolean
+#Else
+Public Function ClipBoard_HasFormat(ByVal phWnd As Long, _
+                   ByVal peCBFormat As eCBFormat) As Boolean
+#End If
+  Dim lRet    As Long
+ 
+  If OpenClipboard(phWnd) > 0 Then
+    lRet = EnumClipboardFormats(0)
+    If lRet <> 0 Then
+      Do
+        If lRet = peCBFormat Then
+          ClipBoard_HasFormat = True
+          Exit Do
+        End If
+        lRet = EnumClipboardFormats(lRet)
+      Loop While lRet <> 0
+    End If
+    CloseClipboard
+  Else
+    'Problem: Cannot open clipboard
+  End If
+End Function
+ 
+#If Win64 Then
+Public Function ClipBoard_GetTextData(ByVal phWnd As LongLong) As String
+  Dim hData       As LongPtr
+  Dim lByteLen    As LongPtr
+  Dim lPointer    As LongPtr
+  Dim lSize       As LongLong
+#Else
+Public Function ClipBoard_GetTextData(ByVal phWnd As Long) As String
+  Dim hData       As Long
+  Dim lByteLen    As Long
+  Dim lPointer    As Long
+  Dim lSize       As Long
+#End If
+  Dim lRet        As Long
+ 
+  Dim abData()    As Byte
+  Dim sText       As String
+ 
+  lRet = OpenClipboard(phWnd)
+  If lRet > 0 Then
+    hData = GetClipboardData(eCBFormat.CF_TEXT)
+    If hData <> 0 Then
+      lByteLen = GlobalSize(hData)
+      lSize = GlobalSize(hData)
+      lPointer = GlobalLock(hData)
+      If lSize > 0 Then
+        ReDim abData(0 To CLng(lSize) - CLng(1)) As Byte
+        CopyMemory abData(0), ByVal lPointer, lSize
+        GlobalUnlock hData
+        sText = StrConv(abData, vbUnicode)
+      End If
+    Else
+      'Problem: Cannot open clipboard
+    End If
+    CloseClipboard
+  End If
+ 
+  ClipBoard_GetTextData = sText
+End Function
+
+Sub button1_Click()
+  Debug.Print ClipBoard_GetTextData(0)
+End Sub

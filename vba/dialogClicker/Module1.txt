@@ -1,0 +1,213 @@
+' ウィンドウハンドルを取得する
+Declare PtrSafe Function FindWindow Lib "USER32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+' ウィンドウが可視かどうかを取得する
+Declare PtrSafe Function IsWindowVisible Lib "USER32" (ByVal hWnd As Long) As Long
+' ウィンドウのキャプションタイトルを取得する
+Declare PtrSafe Function GetWindowText Lib "USER32" Alias "GetWindowTextA" (ByVal hWnd As Long, ByVal lpString As String, ByVal cch As Long) As Long
+' ウィンドウのクラス名を取得する
+Declare PtrSafe Function GetClassName Lib "USER32" Alias "GetClassNameA" (ByVal hWnd As Long, ByVal lpClassName As String, ByVal nMaxCount As Long) As Long
+' 取得中のウィンドウの次または前のウィンドウハンドルを取得する
+Declare PtrSafe Function GetNextWindow Lib "USER32" Alias "GetWindow" (ByVal hWnd As Long, ByVal wFlag As Long) As Long
+
+Declare PtrSafe Function FindWindowEx Lib "user32.dll" Alias "FindWindowExA" (ByVal hWndParent As Long, ByVal hwndChildAfter As Long, ByVal lpszClass As String, ByVal lpszWindow As String) As Long
+
+Const GW_HWNDLAST = 1
+Const GW_HWNDNEXT = 2
+
+Declare PtrSafe Function EnumChildWindows Lib "USER32" (ByVal hWndParent As Long, ByVal lpEnumFunc As LongPtr, lParam As Long) As Long
+
+'Declare PtrSafe Function SetWindowText Lib "USER32" Alias "SetWindowTextA" (ByVal hWnd As Long, ByVal lpString As String) As Long
+
+Declare PtrSafe Function SendMessage Lib "user32.dll" Alias "SendMessageA" (ByVal hWnd As Long, ByVal Msg As Long, ByVal wParam As Long, ByVal lParam As String) As Long
+Declare PtrSafe Function SendMessageStr Lib "USER32" Alias "SendMessageA" (ByVal hWnd As Long, ByVal Msg As Long, ByVal wParam As Long, ByVal lParam As String) As Long
+Declare PtrSafe Function GetWindowLong Lib "USER32" Alias "GetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long) As Long
+
+
+Const WM_SETTEXT As Long = &HC
+Const WM_GETTEXT As Long = &HD
+Const WM_GETTEXTLENGTH = &HE
+Const BM_CLICK = &HF5
+
+Const GWL_STYLE = -16
+
+Const NOT_EXISTS = -1
+
+
+Public Function EnumChildProc(ByVal hWnd As Long, ByVal lParam As Object) As Boolean
+
+  Dim Ret As Long
+  Dim Leng As Long
+  Dim name As String
+  Dim class As String
+
+  'バッファ確保
+  name = String(255, Chr(0))
+  class = String(255, Chr(0))
+  Leng = Len(name)
+
+  '名前を取得する
+  Ret = GetWindowText(hWnd, name, Leng)
+  Ret = GetClassName(hWnd, class, Len(class))
+  If Ret <> 0 Then
+    Debug.Print class
+    Debug.Print name
+    If Left(class, InStr(class, vbNullChar) - 1) = "Edit" Then
+'      Debug.Print "come here"
+'      Length = SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0)
+'      Dim DisplayStr As String
+'      DisplayStr = String(Length, vbNullChar)
+'      reta = SendMessageStr(hwnd, WM_GETTEXT, Length + 1, DisplayStr)
+'      Debug.Print DisplayStr
+            
+'      SendMessageStr hwnd, WM_SETTEXT, 0, "bbb"
+    End If
+    
+    If Left(class, InStr(class, vbNullChar) - 1) = "Button" And Left(name, InStr(name, vbNullChar) - 1) = "OK" Then
+      Ret = SendMessage(hWnd, BM_CLICK, 0, 0)
+    End If
+  End If
+
+  EnumChildProc = True
+
+End Function
+
+Public Function EnumChildProcLogin(ByVal hWnd As Long, lParam As Long) As Boolean
+
+  Dim Ret As Long
+  Dim name As String
+  Dim class As String
+  Dim nameBuff As String
+  Dim classBuff As String
+  Dim okButtonhWnd As Long
+  Dim idhWnd As Long
+  Dim passhWnd As Long
+
+  'バッファ確保
+  nameBuff = String(255, Chr(0))
+  classBuff = String(255, Chr(0))
+
+  '名前を取得する
+  Ret = GetClassName(hWnd, classBuff, Len(classBuff))
+  If Ret <> 0 Then
+    class = Left(classBuff, InStr(classBuff, vbNullChar) - 1)
+    Debug.Print class
+    
+    GetWindowText hWnd, nameBuff, Len(nameBuff)
+    name = Left(nameBuff, InStr(nameBuff, vbNullChar) - 1)
+    Debug.Print name
+    
+    If class = "Edit" Then
+      Length = SendMessage(hWnd, WM_GETTEXTLENGTH, 0, 0)
+      Style = GetWindowLong(hWnd, GWL_STYLE)
+      inputStr = ""
+      If Style And &H20 Then
+        inputStr = "aaaa"
+      Else
+        inputStr = "b"
+      End If
+      SendMessageStr hWnd, WM_SETTEXT, 0, inputStr
+    End If
+    
+    If class = "Button" And name = "OK" Then
+      lParam = hWnd
+    End If
+  End If
+  
+  EnumChildProcLogin = True
+
+End Function
+
+
+
+Sub button1_Click()
+  Dim title As String
+  Dim hWnd As Long
+  Dim okhWnd As Long
+  
+  title = "Windows セキュリティ"
+  hWnd = GetWindowHandle(title)
+  
+  If hWnd <> NOT_EXISTS Then
+    EnumChildWindows hWnd, AddressOf EnumChildProcLogin, okhWnd
+    Debug.Print okhWnd
+    'SendMessage okhWnd, BM_CLICK, 0, 0
+  End If
+
+End Sub
+
+Function GetWindowHandle(title As String) As Long
+  Dim hWnd As Long
+  Dim strClassName As String
+  Dim strCaption As String
+  Dim strClassNameBuff As String * 100
+  Dim strCaptionBuff As String * 80
+  
+  hWnd = FindWindow(vbNullString, vbNullString)
+
+  Do
+    If IsWindowVisible(hWnd) Then
+      GetWindowText hWnd, strCaptionBuff, Len(strCaptionBuff)
+      strCaption = Left(strCaptionBuff, InStr(strCaptionBuff, vbNullChar) - 1)
+      Debug.Print strCaption
+      If strCaption = title Then
+        GetWindowHandle = hWnd
+        Exit Function
+      End If
+
+    End If
+    hWnd = GetNextWindow(hWnd, GW_HWNDNEXT)
+  Loop Until hWnd = GetNextWindow(hWnd, GW_HWNDLAST)
+
+  GetWindowHandle = NOT_EXISTS
+
+End Function
+
+Sub test_Click()
+  Debug.Print "hoge"
+  'AppActivate ("無題 - メモ帳")
+  Dim i As Long
+  i = 1
+
+  Dim strClassName As String * 100
+  Dim strCaption As String * 80
+
+  Dim hWnd As Long
+  hWnd = FindWindow(vbNullString, vbNullString)
+
+  Do
+    If IsWindowVisible(hWnd) Then
+      GetWindowText hWnd, strCaption, Len(strCaption)
+      GetClassName hWnd, strClassName, Len(strClassName)
+
+      Cells(i, 1).Value = Left(strClassName, InStr(strClassName, vbNullChar) - 1)
+      Cells(i, 2).Value = Left(strCaption, InStr(strCaption, vbNullChar) - 1)
+      If Left(strCaption, InStr(strCaption, vbNullChar) - 1) = "Windows セキュリティ" Then
+        uhWnd = FindWindowEx(hWnd, 0, "Button", "")
+        phWnd = FindWindowEx(hWnd, uhWnd, "Edit", "")
+        Debug.Print "ぷー" + Str(hWnd) + Str(uhWnd) + Str(phWnd)
+        Ret = EnumChildWindows(hWnd, AddressOf EnumChildProc, 0)
+      End If
+
+      i = Application.WorksheetFunction.Max(Cells(60000, 1).End(xlUp).Row, Cells(60000, 2).End(xlUp).Row, Cells(60000, 3).End(xlUp).Row) + 1
+      
+    End If
+    hWnd = GetNextWindow(hWnd, GW_HWNDNEXT)
+  Loop Until hWnd = GetNextWindow(hWnd, GW_HWNDLAST)
+  
+      
+End Sub
+
+
+Sub button2_Click()
+  Dim sws As New SHDocVw.ShellWindows
+  Dim IE As SHDocVw.InternetExplorer
+  Dim doc As Variant
+    Debug.Print sws.Count
+    For Each IE In sws
+      Debug.Print IE.LocationName
+      If TypeOf doc Is HTMLDocument Then
+        Debug.Print doc.title
+      End If
+    Next
+End Sub
+
