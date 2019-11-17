@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.902
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToolLauncher", "ToolLauncher\ToolLauncher.csproj", "{DBF8F34E-D0C6-411A-93CB-6D3909C03463}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DBF8F34E-D0C6-411A-93CB-6D3909C03463}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBF8F34E-D0C6-411A-93CB-6D3909C03463}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBF8F34E-D0C6-411A-93CB-6D3909C03463}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBF8F34E-D0C6-411A-93CB-6D3909C03463}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7D1569F5-6F0F-43E1-B084-399314AAEA25}
+	EndGlobalSection
+EndGlobal
